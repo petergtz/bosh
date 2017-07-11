@@ -1553,6 +1553,34 @@ module Bosh::Director
             end
           end
         end
+
+        describe 'deployment revisions' do
+          # before { basic_authorize 'reader', 'reader' }
+
+          it 'lists the revisions' do
+            Models::Deployment.create(name: 'my-deployment')
+
+            event = Models::Event.create(
+              timestamp:   Time.now,
+              user:        "user",
+              action:      "create",
+              object_type: "deployment_revision",
+              deployment:  "my-deployment",
+              context: {manifest_content: "bla"}
+              )
+            get '/my-deployment/history', {}, {}
+            expect(last_response.status).to eq(200)
+            body = JSON.parse(last_response.body)
+            expect(body).to eq([
+                  {
+                    'id'=> 1,
+                    'deployment_name'=>"my-deployment",
+                    'timestamp'=>event.timestamp.to_s,
+                    'manifest_content'=>"bla"
+                  }
+                ])
+          end
+        end
       end
 
       describe 'authorization' do

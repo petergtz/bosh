@@ -48,6 +48,7 @@ module Bosh::Director
         @instance_manager = Api::InstanceManager.new
         @deployments_repo = DeploymentPlan::DeploymentRepo.new
         @instance_ignore_manager = Api::InstanceIgnoreManager.new
+        @revision_manager = Api::RevisionManager.new
       end
 
       get '/:deployment/jobs/:job/:index_or_id' do
@@ -143,6 +144,20 @@ module Bosh::Director
 
       get '/:deployment/snapshots' do
         json_encode(@snapshot_manager.snapshots(deployment))
+      end
+
+      get '/:deployment/history' do
+        json_encode(@revision_manager.revisions(deployment.name))
+      end
+
+      get '/:deployment/diff_revisions' do
+        json_encode(@revision_manager.diff(deployment, params['revision1'], params['revision2']))
+      end
+
+      get '/:deployment/rollback' do
+        target_revision = @revision_manager.revision(deployment, params['to_revision'])
+         # TODO (pego): extract some of the deployment creation code and re-use here
+        json_encode("NOT IMPLEMENTED YET")
       end
 
       get '/:deployment/jobs/:job/:index/snapshots' do

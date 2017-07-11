@@ -17,6 +17,7 @@ module Bosh::Director
         @runtime_config_ids = runtime_config_ids
         @options = options
         @event_log = Config.event_log
+        @revision_manager = Api::RevisionManager.new
       end
 
       def dry_run?
@@ -54,6 +55,7 @@ module Bosh::Director
         previous_releases, previous_stemcells = get_stemcells_and_releases
         context = {}
         parent_id = add_event
+        @revision_manager.create_revision(@deployment_name, @manifest_text, username)
         is_deploy_action = @options['deploy']
 
         with_deployment_lock(@deployment_name) do
