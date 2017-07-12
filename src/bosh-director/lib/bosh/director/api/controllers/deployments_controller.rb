@@ -151,7 +151,7 @@ module Bosh::Director
       end
 
       get '/:deployment/diff_revisions' do
-        json_encode(@revision_manager.diff(deployment, params['revision1'], params['revision2']))
+        json_encode(@revision_manager.diff(deployment, params['revision1'], params['revision2'], false))
       end
 
       get '/:deployment/rollback' do

@@ -25,6 +25,7 @@ module Bosh::Director
       end
 
       def perform
+        started_at = Time.now
         logger.info('Reading deployment manifest')
         manifest_hash = YAML.load(@manifest_text)
         logger.debug("Manifest:\n#{@manifest_text}")
@@ -55,7 +56,6 @@ module Bosh::Director
         previous_releases, previous_stemcells = get_stemcells_and_releases
         context = {}
         parent_id = add_event
-        @revision_manager.create_revision(@deployment_name, @manifest_text, username)
         is_deploy_action = @options['deploy']
 
         with_deployment_lock(@deployment_name) do
@@ -115,6 +115,7 @@ module Bosh::Director
               @notifier.send_end_event
               logger.info('Finished updating deployment')
               add_event(context, parent_id)
+              @revision_manager.create_revision(@deployment_name, username, started_at, @manifest_text, @cloud_config_id, @runtime_config_ids)
 
               "/deployments/#{deployment_plan.name}"
             end
@@ -129,6 +130,7 @@ module Bosh::Director
           # log the second error
         ensure
           add_event(context, parent_id, e)
+          @revision_manager.create_revision(@deployment_name, username, started_at, @manifest_text, @cloud_config_id, @runtime_config_ids, e)
           raise e
         end
       ensure
