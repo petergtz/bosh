@@ -115,7 +115,7 @@ module Bosh::Director
               @notifier.send_end_event
               logger.info('Finished updating deployment')
               add_event(context, parent_id)
-              @revision_manager.create_revision(@deployment_name, username, started_at, @manifest_text, @cloud_config_id, @runtime_config_ids)
+              @revision_manager.create_revision(@deployment_name, username, task_id, started_at, @manifest_text, @cloud_config_id, @runtime_config_ids, next_releases, next_stemcells)
 
               "/deployments/#{deployment_plan.name}"
             end
@@ -130,7 +130,7 @@ module Bosh::Director
           # log the second error
         ensure
           add_event(context, parent_id, e)
-          @revision_manager.create_revision(@deployment_name, username, started_at, @manifest_text, @cloud_config_id, @runtime_config_ids, e)
+          @revision_manager.create_revision(@deployment_name, username, task_id, started_at, @manifest_text, @cloud_config_id, @runtime_config_ids, next_releases, next_stemcells, e)
           raise e
         end
       ensure
