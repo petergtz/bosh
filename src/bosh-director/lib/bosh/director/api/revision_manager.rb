@@ -7,7 +7,7 @@ module Bosh::Director
         @event_manager = EventManager.new(true)
       end
 
-      def create_revision(deployment_name, user, task, started_at, manifest_content, cloud_config_id, runtime_config_ids, releases, stemcells, error = nil)
+      def create_revision(deployment_name:, user:, task:, started_at:, manifest_text:, cloud_config_id:, runtime_config_ids:, releases:, stemcells:, error: nil)
         Models::Event.create(
           timestamp:   Time.now,
           user:        user,
@@ -17,7 +17,7 @@ module Bosh::Director
           object_name: (last_revision_number(deployment_name)+1).to_s,
           deployment:  deployment_name,
           context: {
-            manifest_text: manifest_content,
+            manifest_text: manifest_text,
             started_at: started_at,
             cloud_config_id: cloud_config_id,
             runtime_config_ids: runtime_config_ids,
@@ -33,7 +33,7 @@ module Bosh::Director
       end
       
       
-      def revisions(deployment_name, should_include_manifest: false, should_include_cloud_config: false, should_include_runtime_configs: false)
+      def revisions(deployment_name, include_manifest: false, include_cloud_config: false, include_runtime_configs: false)
         Models::Event.order_by(Sequel.desc(:id)).
           where(deployment: deployment_name).
           and(object_type: 'deployment_revision').all.map do |event|
@@ -46,9 +46,30 @@ module Bosh::Director
               completed_at: event.timestamp,
               error: event.error,
             }.tap{ |result| 
-              result[:manifest_content] = event.context['manifest_text'] if should_include_manifest
+              result[:manifest_text] = event.context['manifest_text'] if include_manifest
             }
           end
+      end
+
+      def revision(deployment_name, revision_number)
+        event = Models::Event.find(object_name: revision_number)
+        cloud_config = Bosh::Director::Models::CloudConfig.find(id: event.context['cloud_config_id'])
+        runtime_configs = Bosh::Director::Models::RuntimeConfig.find_by_ids(event.context['runtime_config_ids'])
+        {
+          deployment_name: deployment_name,
+          revision_number: event.object_name.to_i, 
+          user: event.user,
+          task: event.task,
+          started_at: event.context['started_at'],
+          completed_at: event.timestamp,
+          error: event.error,
+          manifest_text: event.context['manifest_text'],
+          releases: event.context['releases'],
+          stemcells: event.context['stemcells'],
+          runtime_configs: runtime_configs.map{ |runtime_config| runtime_config.raw_manifest },
+        }.tap{ |result| 
+          result[:cloud_config] = cloud_config.interpolated_manifest(deployment_name) if cloud_config
+        }
       end
 
       def diff(deployment, revision1, revision2, should_redact: true)

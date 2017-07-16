@@ -12,9 +12,10 @@ describe 'deploy job update', type: :integration do
       disk_pool = Bosh::Spec::Deployments.disk_pool
       cloud_config['disk_pools'] = [disk_pool]
       cloud_config['compilation']['reuse_compilation_vms'] = true
-      deploy_from_scratch(manifest_hash: manifest_hash, cloud_config_hash: cloud_config, runtime_config_hash: {
-          'releases' => [{ 'name' => 'bosh-release', 'version' => '0.1-dev' }]
-      })
+      # deploy_from_scratch(manifest_hash: manifest_hash, cloud_config_hash: cloud_config, runtime_config_hash: {
+      #     'releases' => [{ 'name' => 'bosh-release', 'version' => '0.1-dev' }]
+      # })
+      deploy_from_scratch(manifest_hash: manifest_hash, cloud_config_hash: cloud_config)
 
       cloud_config['compilation']['reuse_compilation_vms'] = false
       upload_cloud_config(cloud_config_hash: cloud_config)
@@ -23,6 +24,10 @@ describe 'deploy job update', type: :integration do
       deploy_simple_manifest(manifest_hash: manifest_hash)
 
       manifest_hash['jobs'][0]['instances'] = 3
+      deploy_simple_manifest(manifest_hash: manifest_hash)
+
+      update_release
+      manifest_hash['releases'][0]['version'] = 'latest'
       deploy_simple_manifest(manifest_hash: manifest_hash)
 
       sleep(3600)
