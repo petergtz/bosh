@@ -98,32 +98,43 @@ module Bosh::Director
     end
 
     describe '#diff' do
-      it 'returns a diff between the manifests' do
-        create_test_revision("deployment-A", manifest_text: 'key: 1')
-        create_test_revision("deployment-A", manifest_text: 'key: 2')
-
-        expect(subject.diff("deployment-A", 1, 2, should_redact: false)).to eq(
-          manifest: [
-            ["key: 1", "removed"],
-            ["", nil], 
-            ["key: 2", "added"]
-          ]
-        )
+      before do
+        create_test_revision("deployment-A", 
+          manifest_text: {
+            'releases' => [
+              {'name' => 'A', 'version' => '2'},
+              {'name' => 'B', 'version' => '1'}
+            ]
+          }.to_yaml,
+          releases: ['A/1', 'A/2', 'B/1'])
+        create_test_revision("deployment-A", 
+          manifest_text: {
+            'releases' => [
+              {'name' => 'A', 'version' => 'latest'}, 
+              {'name' => 'B', 'version' => '2'}
+            ]
+          }.to_yaml, 
+          releases: ['A/1', 'A/2', 'A/3', 'B/2'])
       end
 
       it 'returns a diff between the manifests' do
-        create_test_revision("deployment-A", releases: ['A/1', 'A/2', 'B/1'])
-        create_test_revision("deployment-A", releases: ['A/1', 'A/2', 'A/3', 'B/2'])
+        expect(subject.diff("deployment-A", 1, 2, should_redact: false)[:manifest]).to eq(
+          [
+            ["releases:", nil],
+            ["- name: A", nil],
+            ["  version: '2'", "removed"],
+            ["  version: latest", "added"],
+            ["- name: B", nil],
+            ["  version: '1'", "removed"],
+            ["  version: '2'", "added"]
+          ]        
+        )
+      end
 
-        puts subject.diff("deployment-A", 1, 2, should_redact: false)
-
-        # expect(subject.diff("deployment-A", 1, 2, should_redact: false)).to eq(
-        #   manifest: [
-        #     ["key: 1", "removed"],
-        #     ["", nil], 
-        #     ["key: 2", "added"]
-        #   ]
-        # )
+      it 'returns releases added and removed, resolving "latest" to concrete version number' do
+        expect(subject.diff("deployment-A", 1, 2, should_redact: false)[:releases]).to eq(
+          {:added=>["A/3", "B/2"], :removed=>["A/2", "B/1"]}
+        )
       end
     end
   end

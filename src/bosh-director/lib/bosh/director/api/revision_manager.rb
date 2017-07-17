@@ -76,21 +76,44 @@ module Bosh::Director
         event1 = Models::Event.find(object_name: revision1)
         event2 = Models::Event.find(object_name: revision2)
 
-        Manifest.load_from_hash(
-          validate_manifest_yml(event1.context['manifest_text'], nil),
-          Bosh::Director::Models::CloudConfig.find(id: event1.context['cloud_config_id']),
-          Bosh::Director::Models::RuntimeConfig.find_by_ids(event1.context['runtime_config_ids']),
-          {resolve_interpolation: false}
-        ).diff(
-          Manifest.load_from_hash(
-            validate_manifest_yml(event2.context['manifest_text'], nil),
-            Bosh::Director::Models::CloudConfig.find(id: event2.context['cloud_config_id']),
-            Bosh::Director::Models::RuntimeConfig.find_by_ids(event2.context['runtime_config_ids']),
-            {resolve_interpolation: false}
-          ),
-          should_redact
-        ).map { |l| [l.to_s, l.status] }
+        releases1 = releases(event1.context)
+        releases2 = releases(event2.context)
+        {
+          manifest: manifest_from(event1.context).diff(manifest_from(event2.context), should_redact).
+            map { |l| [l.to_s, l.status] },
+          releases: {
+            added: releases2-releases1,
+            removed: releases1-releases2,
+          }
+        }
       end
+
+      def manifest_from(context)
+        Manifest.load_from_hash(
+              validate_manifest_yml(context['manifest_text'], nil),
+              Bosh::Director::Models::CloudConfig.find(id: context['cloud_config_id']),
+              Bosh::Director::Models::RuntimeConfig.find_by_ids(context['runtime_config_ids']),
+              {resolve_interpolation: false}
+            )
+      end
+
+      def releases(context)
+        Manifest.load_from_hash(
+              validate_manifest_yml(context['manifest_text'], nil),
+              Bosh::Director::Models::CloudConfig.find(id: context['cloud_config_id']),
+              Bosh::Director::Models::RuntimeConfig.find_by_ids(context['runtime_config_ids']),
+              {resolve_interpolation: false}
+            ).to_hash['releases'].map do |nv| 
+          if nv['version'] == 'latest'
+            "#{nv['name']}/#{context['releases'].keep_if{ |release|
+              release.split('/', 2)[0] == nv['name']
+            }.last.split('/', 2)[1]}"
+          else
+            "#{nv['name']}/#{nv['version']}"
+          end
+        end
+      end
+
     end
   end
 end
