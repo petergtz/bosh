@@ -88,6 +88,8 @@ module Bosh::Director
         }
       end
 
+      private 
+
       def manifest_from(context)
         Manifest.load_from_hash(
               validate_manifest_yml(context['manifest_text'], nil),
@@ -98,12 +100,7 @@ module Bosh::Director
       end
 
       def releases(context)
-        Manifest.load_from_hash(
-              validate_manifest_yml(context['manifest_text'], nil),
-              Bosh::Director::Models::CloudConfig.find(id: context['cloud_config_id']),
-              Bosh::Director::Models::RuntimeConfig.find_by_ids(context['runtime_config_ids']),
-              {resolve_interpolation: false}
-            ).to_hash['releases'].map do |nv| 
+        manifest_from(context).to_hash['releases'].map do |nv| 
           if nv['version'] == 'latest'
             "#{nv['name']}/#{context['releases'].keep_if{ |release|
               release.split('/', 2)[0] == nv['name']
