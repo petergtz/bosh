@@ -105,6 +105,7 @@ module Bosh::Director
           raise ReleaseVersionInvalid, "Release version invalid: #{@manifest["version"]}"
         end
 
+        @source_repo_url = @manifest.fetch("source_repo_url", nil)
         @commit_hash = @manifest.fetch("commit_hash", nil)
         @uncommitted_changes = @manifest.fetch("uncommitted_changes", nil)
       end
@@ -140,6 +141,7 @@ module Bosh::Director
         end
 
         if release_is_new
+          @release_version_model.source_repo_url = @source_repo_url if @source_repo_url 
           @release_version_model.uncommitted_changes = @uncommitted_changes if @uncommitted_changes
           @release_version_model.commit_hash = @commit_hash if @commit_hash
           @release_version_model.save

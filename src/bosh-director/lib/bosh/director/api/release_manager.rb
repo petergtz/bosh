@@ -33,6 +33,7 @@ module Bosh::Director
           provided = version[:provided]
           {
             'version' => provided.version.to_s,
+            'source_repo_url' => provided.source_repo_url,
             'commit_hash' => provided.commit_hash,
             'uncommitted_changes' => provided.uncommitted_changes,
             'currently_deployed' => !provided.deployments.empty?,
