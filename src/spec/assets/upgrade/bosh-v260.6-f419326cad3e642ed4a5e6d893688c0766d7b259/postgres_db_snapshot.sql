@@ -998,6 +998,7 @@ CREATE TABLE release_versions (
     id integer NOT NULL,
     version text NOT NULL,
     release_id integer NOT NULL,
+    source_repo_url text,
     commit_hash text DEFAULT 'unknown'::text,
     uncommitted_changes boolean DEFAULT false
 );
