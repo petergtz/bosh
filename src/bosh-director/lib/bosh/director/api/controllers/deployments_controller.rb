@@ -147,7 +147,7 @@ module Bosh::Director
       end
 
       get '/:deployment/history' do
-        json_encode(@revision_manager.revisions(deployment.name, 
+        json_encode(@revision_manager.revisions(deployment.name,
           include_manifest: params['include_manifest'],
           include_cloud_config: params['include_cloud_config'],
           include_runtime_configs: params['include_runtime_configs']))
